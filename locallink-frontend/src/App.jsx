@@ -1,11 +1,19 @@
 import React, { useEffect, useState } from "react";
-import { Route, Routes, Link } from "react-router-dom";
+import { Route, Routes, useNavigate } from "react-router-dom";
 import { useAuthContext } from "@asgardeo/auth-react";
 import jwtDecode from "jwt-decode";
+import axios from "axios";
+
+import Layout from "./components/Layout";
+import NavBar from "./components/NavBar";
+import Spinner from "./components/Spinner";
+import TokenDisplay from "./components/TokenDisplay";  // ✅ Added token display
 
 import Profile from "./pages/Profile.jsx";
 import Services from "./pages/Services.jsx";
 import Dashboard from "./pages/Dashboard.jsx";
+import AdminDashboard from "./pages/AdminDashboard.jsx";
+import ProfileSetup from "./pages/ProfileSetup.jsx";
 
 function App() {
   const {
@@ -17,13 +25,18 @@ function App() {
     getAccessToken,
   } = useAuthContext();
 
+  const navigate = useNavigate();
+
   const [userInfo, setUserInfo] = useState(null);
   const [userRoles, setUserRoles] = useState([]);
   const [accessToken, setAccessToken] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [profileComplete, setProfileComplete] = useState(false);
 
   useEffect(() => {
     async function fetchUserData() {
       if (state?.isAuthenticated) {
+        setLoading(true);
         try {
           const basicInfo = await getBasicUserInfo();
           setUserInfo(basicInfo);
@@ -58,44 +71,106 @@ function App() {
           } else {
             setUserRoles([]);
           }
+
+          await checkProfile(fetchedAccessToken);
         } catch (error) {
           console.error("❌ Error fetching user info or token", error);
           setUserInfo(null);
           setUserRoles([]);
           setAccessToken(null);
+        } finally {
+          setLoading(false);
         }
       } else {
         setUserInfo(null);
         setUserRoles([]);
         setAccessToken(null);
+        setProfileComplete(false);
       }
     }
 
     fetchUserData();
   }, [state?.isAuthenticated]);
 
-  if (!state?.isAuthenticated) {
+  const checkProfile = async (token) => {
+    try {
+      const res = await axios.get("http://localhost:3001/api/profile", {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      });
+      console.log("👤 Profile exists:", res.data);
+      setProfileComplete(true);
+    } catch (err) {
+      console.warn("⚠️ Profile not found, redirecting to setup");
+      setProfileComplete(false);
+      navigate("/profile-setup");
+    }
+  };
+
+  if (loading) {
     return (
-      <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-        <h1>LocalLink</h1>
-        <p>Welcome! Please login to continue.</p>
-        <button onClick={() => signIn()}>Login</button>
+      <div className="h-screen flex justify-center items-center bg-gray-900">
+        <Spinner />
       </div>
     );
   }
 
-  return (
-    <div style={{ padding: "2rem", fontFamily: "sans-serif" }}>
-      <h1>LocalLink</h1>
+  if (!state?.isAuthenticated) {
+    return (
+      <div className="h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
+        <h1 className="text-5xl font-extrabold mb-4">LocalLink</h1>
+        <p className="mb-6 text-lg">Welcome! Please login to continue.</p>
+        <button
+          onClick={() => signIn()}
+          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition"
+        >
+          Login
+        </button>
+      </div>
+    );
+  }
 
-      <nav style={{ marginBottom: "1rem" }}>
-        <Link to="/profile">Profile</Link> |{" "}
-        <Link to="/services">Services</Link> |{" "}
-        {userRoles.includes("service_provider") && (
-          <Link to="/dashboard">Dashboard</Link>
-        )} |{" "}
-        <button onClick={() => signOut()}>Logout</button>
-      </nav>
+  if (!profileComplete) {
+    return (
+      <Routes>
+        <Route
+          path="/profile-setup"
+          element={
+            <ProfileSetup
+              accessToken={accessToken}
+              onComplete={() => {
+                setProfileComplete(true);
+                navigate("/");
+              }}
+            />
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <div className="h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
+              <p className="text-xl mb-4">Please complete your profile first.</p>
+              <button
+                onClick={() => navigate("/profile-setup")}
+                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition"
+              >
+                Complete Profile
+              </button>
+            </div>
+          }
+        />
+      </Routes>
+    );
+  }
+
+  return (
+    <Layout>
+      <NavBar userRoles={userRoles} signOut={signOut} />
+
+      <div className="p-4">
+        <TokenDisplay /> {/* ✅ Token shown here */}
+      </div>
 
       <Routes>
         <Route
@@ -112,23 +187,48 @@ function App() {
             userRoles.includes("service_provider") ? (
               <Dashboard accessToken={accessToken} userId={userInfo?.sub} />
             ) : (
-              <p>Access Denied</p>
+              <p className="text-red-600 font-semibold p-6">Access Denied</p>
+            )
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            userRoles.includes("admin") ? (
+              <AdminDashboard
+                accessToken={accessToken}
+                userRoles={userRoles}
+              />
+            ) : (
+              <p className="text-red-600 font-semibold p-6">Access Denied</p>
             )
           }
         />
         <Route
           path="/"
           element={
-            <div>
-              <p>Welcome back, {userInfo?.given_name || userInfo?.username || "user"}!</p>
-              <p><strong>Email:</strong> {userInfo?.email}</p>
-              <p><strong>Roles:</strong> {userRoles.join(", ") || "None"}</p>
-              <p><strong>Access Token:</strong> {accessToken}</p>
+            <div className="p-6">
+              <p className="mb-2 text-lg">
+                Welcome back,{" "}
+                <span className="font-semibold">
+                  {userInfo?.givenName || userInfo?.username || "user"}
+                </span>
+                !
+              </p>
+              <p className="mb-2">
+                <strong>Email:</strong> {userInfo?.email}
+              </p>
+              <p>
+                <strong>Roles:</strong>{" "}
+                <span className="italic">
+                  {userRoles.length > 0 ? userRoles.join(", ") : "None"}
+                </span>
+              </p>
             </div>
           }
         />
       </Routes>
-    </div>
+    </Layout>
   );
 }
 
