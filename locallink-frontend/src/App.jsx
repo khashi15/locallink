@@ -7,7 +7,6 @@ import axios from "axios";
 import Layout from "./components/Layout";
 import NavBar from "./components/NavBar";
 import Spinner from "./components/Spinner";
-import TokenDisplay from "./components/TokenDisplay";  // ✅ Added token display
 
 import Profile from "./pages/Profile.jsx";
 import Services from "./pages/Services.jsx";
@@ -33,14 +32,32 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [profileComplete, setProfileComplete] = useState(false);
 
+  // 🔍 Log raw Asgardeo user object
+  useEffect(() => {
+    console.log("🔍 User info from state.user:", state?.user);
+  }, [state?.user]);
+
   useEffect(() => {
     async function fetchUserData() {
       if (state?.isAuthenticated) {
         setLoading(true);
         try {
           const basicInfo = await getBasicUserInfo();
-          setUserInfo(basicInfo);
           console.log("✅ Basic user info:", basicInfo);
+
+          // ✅ Map keys properly
+          const mappedUserInfo = {
+            userId: basicInfo.sub || "",
+            username: basicInfo.email || "",
+            firstName: basicInfo.given_name || basicInfo.givenName || "",
+            lastName: basicInfo.family_name || basicInfo.familyName || "",
+            role: basicInfo.role || "",
+            country: basicInfo.country || "",
+            email: basicInfo.email || "",
+            mobile: basicInfo.mobile || basicInfo.mobile_number || "",
+            birthDate: basicInfo.birthdate || "",
+          };
+          setUserInfo(mappedUserInfo);
 
           const idToken = await getIDToken();
           console.log("🔑 Raw ID Token:", idToken);
@@ -93,6 +110,14 @@ function App() {
   }, [state?.isAuthenticated]);
 
   const checkProfile = async (token) => {
+    const isAdmin = userRoles.includes("admin");
+
+    if (isAdmin) {
+      console.log("👑 Admin detected - skipping profile check");
+      setProfileComplete(true);
+      return;
+    }
+
     try {
       const res = await axios.get("http://localhost:3001/api/profile", {
         headers: {
@@ -131,7 +156,9 @@ function App() {
     );
   }
 
-  if (!profileComplete) {
+  const isAdmin = userRoles.includes("admin");
+
+  if (!profileComplete && !isAdmin) {
     return (
       <Routes>
         <Route
@@ -168,10 +195,6 @@ function App() {
     <Layout>
       <NavBar userRoles={userRoles} signOut={signOut} />
 
-      <div className="p-4">
-        <TokenDisplay /> {/* ✅ Token shown here */}
-      </div>
-
       <Routes>
         <Route
           path="/profile"
@@ -185,7 +208,7 @@ function App() {
           path="/dashboard"
           element={
             userRoles.includes("service_provider") ? (
-              <Dashboard accessToken={accessToken} userId={userInfo?.sub} />
+              <Dashboard accessToken={accessToken} userId={userInfo?.userId} />
             ) : (
               <p className="text-red-600 font-semibold p-6">Access Denied</p>
             )
@@ -211,7 +234,9 @@ function App() {
               <p className="mb-2 text-lg">
                 Welcome back,{" "}
                 <span className="font-semibold">
-                  {userInfo?.givenName || userInfo?.username || "user"}
+                  {userInfo?.firstName ||
+                    userInfo?.username ||
+                    "user"}
                 </span>
                 !
               </p>

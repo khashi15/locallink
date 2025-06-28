@@ -131,29 +131,32 @@ app.put('/api/services/:id', authenticateToken, (req, res) => {
 
 // POST /api/profile - Save or update profile
 app.post('/api/profile', authenticateToken, (req, res) => {
-  const { role, contactNumber, bio } = req.body;
-  const userEmail = req.user.sub;
+  const { role, contactNumber, bio, country } = req.body;
+  const userId = req.user.sub; // Unique user ID from JWT
+  const userEmail = req.user.email || ''; // Email from JWT if available
 
   if (!role) {
     return res.status(400).json({ message: 'Role is required' });
   }
 
-  userProfiles[userEmail] = {
+  userProfiles[userId] = {
+    userId: userId, // Unique identifier
     email: userEmail,
     role,
     contactNumber: contactNumber || '',
+    country: country ||'',
     bio: bio || '',
   };
 
-  console.log(`✅ Profile saved for ${userEmail}:`, userProfiles[userEmail]);
+  console.log(`✅ Profile saved for ${userId}:`, userProfiles[userId]);
 
   return res.json({ message: 'Profile saved successfully' });
 });
 
 // GET /api/profile - Get current user profile
 app.get('/api/profile', authenticateToken, (req, res) => {
-  const userEmail = req.user.sub;
-  const profile = userProfiles[userEmail];
+  const userId = req.user.sub; // Unique user ID from JWT
+  const profile = userProfiles[userId]; // Lookup using userId
 
   if (!profile) {
     return res.status(404).json({ message: 'Profile not found' });

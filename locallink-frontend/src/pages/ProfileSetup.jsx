@@ -6,16 +6,15 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
   const navigate = useNavigate();
 
   const [role, setRole] = useState("");
-  const [contactNumber, setContactNumber] = useState("");
-  const [bio, setBio] = useState("");
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
     // 🔍 Check if profile already exists
     axios
       .get("http://localhost:3001/api/profile", {
         headers: {
-          Authorization: `Bearer ${accessToken}`, // ✅ Token in header
+          Authorization: `Bearer ${accessToken}`,
         },
       })
       .then((res) => {
@@ -31,13 +30,18 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
 
+    if (!role) {
+      setError("Please select a role.");
+      return;
+    }
+
     axios
       .post(
         "http://localhost:3001/api/profile",
-        { role, contactNumber, bio },
+        { role },
         {
           headers: {
-            Authorization: `Bearer ${accessToken}`, // ✅ Token in header
+            Authorization: `Bearer ${accessToken}`,
           },
         }
       )
@@ -47,7 +51,7 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
         if (onComplete) {
           onComplete();
         } else {
-          navigate("/"); // fallback if onComplete is not passed
+          navigate("/");
         }
       })
       .catch((err) => {
@@ -65,46 +69,39 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
   }
 
   return (
-    <div className="max-w-md mx-auto mt-10 p-6 border rounded shadow">
-      <h1 className="text-2xl mb-4 font-bold">Complete Your Profile</h1>
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div>
-          <label className="block mb-1 font-medium">Select Role</label>
-          <select
-            className="w-full border p-2 rounded"
-            value={role}
-            onChange={(e) => setRole(e.target.value)}
-            required
+    <div className="min-h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
+      <div className="bg-gray-800 p-8 rounded-lg shadow-lg w-96">
+        <h1 className="text-3xl font-bold mb-6 text-center">
+          Complete Your Profile
+        </h1>
+        <form onSubmit={handleSubmit} className="space-y-6">
+          <div>
+            <label className="block mb-2 text-sm font-medium">
+              Select Your Role
+            </label>
+            <select
+              className="w-full px-4 py-2 bg-gray-700 border border-gray-600 rounded focus:outline-none"
+              value={role}
+              onChange={(e) => setRole(e.target.value)}
+            >
+              <option value="">-- Select Role --</option>
+              <option value="customer">Customer</option>
+              <option value="service_provider">Service Provider</option>
+            </select>
+          </div>
+
+          {error && (
+            <p className="text-red-500 text-sm">{error}</p>
+          )}
+
+          <button
+            type="submit"
+            className="w-full py-2 px-4 bg-blue-600 rounded hover:bg-blue-700 transition"
           >
-            <option value="">Select...</option>
-            <option value="customer">Customer</option>
-            <option value="service_provider">Service Provider</option>
-          </select>
-        </div>
-        <div>
-          <label className="block mb-1 font-medium">Contact Number</label>
-          <input
-            type="text"
-            className="w-full border p-2 rounded"
-            value={contactNumber}
-            onChange={(e) => setContactNumber(e.target.value)}
-          />
-        </div>
-        <div>
-          <label className="block mb-1 font-medium">Bio</label>
-          <textarea
-            className="w-full border p-2 rounded"
-            value={bio}
-            onChange={(e) => setBio(e.target.value)}
-          />
-        </div>
-        <button
-          type="submit"
-          className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 transition"
-        >
-          Save Profile
-        </button>
-      </form>
+            Save and Continue
+          </button>
+        </form>
+      </div>
     </div>
   );
 };
