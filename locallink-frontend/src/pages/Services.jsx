@@ -15,20 +15,27 @@ function Services({ accessToken }) {
   }, [accessToken]);
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6">All Services</h2>
+    <div className="max-w-4xl mx-auto px-6 py-10">
+      <h2 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-yellow-400">
+        All Services
+      </h2>
+
       {services.length === 0 ? (
-        <p className="text-gray-300">No services available.</p>
+        <p className="text-gray-400 italic">No services available.</p>
       ) : (
-        services.map((service) => (
-          <div
-            key={service.id}
-            className="bg-white text-black rounded-lg shadow-md p-4 mb-4"
-          >
-            <h3 className="text-xl font-semibold">{service.title}</h3>
-            <p>{service.description}</p>
-          </div>
-        ))
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+          {services.map((service) => (
+            <div
+              key={service.id}
+              className="bg-white rounded-2xl shadow-lg p-6 hover:shadow-2xl transition cursor-pointer"
+            >
+              <h3 className="text-2xl font-bold text-gray-900 mb-3">
+                {service.title}
+              </h3>
+              <p className="text-gray-700">{service.description}</p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );

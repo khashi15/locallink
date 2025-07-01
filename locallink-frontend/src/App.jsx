@@ -5,8 +5,8 @@ import jwtDecode from "jwt-decode";
 import axios from "axios";
 
 import Layout from "./components/Layout";
-import NavBar from "./components/NavBar";
 import Spinner from "./components/Spinner";
+import Button from "./components/Button";
 
 import Profile from "./pages/Profile.jsx";
 import Services from "./pages/Services.jsx";
@@ -32,11 +32,6 @@ function App() {
   const [loading, setLoading] = useState(false);
   const [profileComplete, setProfileComplete] = useState(false);
 
-  // 🔍 Log raw Asgardeo user object
-  useEffect(() => {
-    console.log("🔍 User info from state.user:", state?.user);
-  }, [state?.user]);
-
   useEffect(() => {
     async function fetchUserData() {
       if (state?.isAuthenticated) {
@@ -45,7 +40,6 @@ function App() {
           const basicInfo = await getBasicUserInfo();
           console.log("✅ Basic user info:", basicInfo);
 
-          // ✅ Map keys properly
           const mappedUserInfo = {
             userId: basicInfo.sub || "",
             username: basicInfo.email || "",
@@ -60,11 +54,12 @@ function App() {
           setUserInfo(mappedUserInfo);
 
           const idToken = await getIDToken();
-          console.log("🔑 Raw ID Token:", idToken);
-
           const fetchedAccessToken = await getAccessToken();
+
+          // Log raw access token here (console only, no UI)
+          console.log("🛠️ Raw Access Token:", fetchedAccessToken);
+
           setAccessToken(fetchedAccessToken);
-          console.log("🔐 Access Token:", fetchedAccessToken);
 
           try {
             const decodedAccessToken = jwtDecode(fetchedAccessToken);
@@ -73,28 +68,26 @@ function App() {
             console.error("❌ Failed to decode access token:", decodeErr);
           }
 
+          let rolesFromToken = [];
           if (idToken) {
             const decoded = jwtDecode(idToken);
-            console.log("🧾 Decoded ID Token:", decoded);
-
             const rolesClaim = decoded.roles || decoded.role || [];
             if (Array.isArray(rolesClaim)) {
-              setUserRoles(rolesClaim);
+              rolesFromToken = rolesClaim;
             } else if (rolesClaim) {
-              setUserRoles([rolesClaim]);
-            } else {
-              setUserRoles([]);
+              rolesFromToken = [rolesClaim];
             }
-          } else {
-            setUserRoles([]);
           }
+          setUserRoles(rolesFromToken);
 
-          await checkProfile(fetchedAccessToken);
+          // Pass roles explicitly to checkProfile to avoid stale closure issue
+          await checkProfile(fetchedAccessToken, rolesFromToken);
         } catch (error) {
           console.error("❌ Error fetching user info or token", error);
           setUserInfo(null);
           setUserRoles([]);
           setAccessToken(null);
+          setProfileComplete(false);
         } finally {
           setLoading(false);
         }
@@ -107,16 +100,19 @@ function App() {
     }
 
     fetchUserData();
-  }, [state?.isAuthenticated]);
+  }, [state?.isAuthenticated, navigate]);
 
-  const checkProfile = async (token) => {
-    const isAdmin = userRoles.includes("admin");
+  const checkProfile = async (token, roles) => {
+    const isRoleAssigned = ["admin", "customer", "service_provider"].some(role =>
+      roles.includes(role)
+    );
 
-    if (isAdmin) {
-      console.log("👑 Admin detected - skipping profile check");
-      setProfileComplete(true);
+    if (isRoleAssigned) {
+      setProfileComplete(true); // ✅ Skip profile setup
       return;
     }
+    // ✅ If no role, go to profile setup
+    setProfileComplete(false);
 
     try {
       const res = await axios.get("http://localhost:3001/api/profile", {
@@ -124,10 +120,10 @@ function App() {
           Authorization: `Bearer ${token}`,
         },
       });
-      console.log("👤 Profile exists:", res.data);
+      console.log("✅ Profile found:", res.data);
       setProfileComplete(true);
     } catch (err) {
-      console.warn("⚠️ Profile not found, redirecting to setup");
+      console.warn("⚠️ Profile not found, redirecting to setup", err.response?.data || err.message);
       setProfileComplete(false);
       navigate("/profile-setup");
     }
@@ -135,7 +131,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="h-screen flex justify-center items-center bg-gray-900">
+      <div className="h-screen flex justify-center items-center bg-gray-950">
         <Spinner />
       </div>
     );
@@ -143,15 +139,16 @@ function App() {
 
   if (!state?.isAuthenticated) {
     return (
-      <div className="h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
-        <h1 className="text-5xl font-extrabold mb-4">LocalLink</h1>
-        <p className="mb-6 text-lg">Welcome! Please login to continue.</p>
-        <button
-          onClick={() => signIn()}
-          className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition"
-        >
+      <div className="h-screen flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white px-4">
+        <h1 className="text-5xl font-extrabold mb-4 tracking-wide">
+          LocalLink
+        </h1>
+        <p className="mb-6 text-lg text-center">
+          Welcome! Please log in to continue.
+        </p>
+        <Button onClick={() => signIn()} className="w-52 text-lg">
           Login
-        </button>
+        </Button>
       </div>
     );
   }
@@ -176,14 +173,13 @@ function App() {
         <Route
           path="*"
           element={
-            <div className="h-screen flex flex-col justify-center items-center bg-gray-900 text-white">
-              <p className="text-xl mb-4">Please complete your profile first.</p>
-              <button
-                onClick={() => navigate("/profile-setup")}
-                className="px-6 py-3 bg-blue-600 text-white font-semibold rounded-md hover:bg-blue-700 transition"
-              >
+            <div className="h-screen flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white px-4">
+              <p className="text-xl mb-4">
+                Please complete your profile to continue.
+              </p>
+              <Button onClick={() => navigate("/profile-setup")}>
                 Complete Profile
-              </button>
+              </Button>
             </div>
           }
         />
@@ -192,9 +188,7 @@ function App() {
   }
 
   return (
-    <Layout>
-      <NavBar userRoles={userRoles} signOut={signOut} />
-
+    <Layout userRoles={userRoles} signOut={signOut}>
       <Routes>
         <Route
           path="/profile"
@@ -210,7 +204,11 @@ function App() {
             userRoles.includes("service_provider") ? (
               <Dashboard accessToken={accessToken} userId={userInfo?.userId} />
             ) : (
-              <p className="text-red-600 font-semibold p-6">Access Denied</p>
+              <div className="p-6">
+                <p className="text-red-600 font-semibold text-lg">
+                  Access Denied
+                </p>
+              </div>
             )
           }
         />
@@ -223,32 +221,32 @@ function App() {
                 userRoles={userRoles}
               />
             ) : (
-              <p className="text-red-600 font-semibold p-6">Access Denied</p>
+              <div className="p-6">
+                <p className="text-red-600 font-semibold text-lg">
+                  Access Denied
+                </p>
+              </div>
             )
           }
         />
         <Route
           path="/"
           element={
-            <div className="p-6">
-              <p className="mb-2 text-lg">
+            <div className="max-w-3xl mx-auto px-6 py-10">
+              <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
                 Welcome back,{" "}
-                <span className="font-semibold">
-                  {userInfo?.firstName ||
-                    userInfo?.username ||
-                    "user"}
-                </span>
-                !
-              </p>
-              <p className="mb-2">
-                <strong>Email:</strong> {userInfo?.email}
-              </p>
-              <p>
-                <strong>Roles:</strong>{" "}
-                <span className="italic">
+                {userInfo?.firstName || userInfo?.username || "User"}!
+              </h1>
+              <div className="space-y-4 text-lg text-gray-200">
+                <p>
+                  <strong className="text-white">Email:</strong>{" "}
+                  {userInfo?.email}
+                </p>
+                <p>
+                  <strong className="text-white">Roles:</strong>{" "}
                   {userRoles.length > 0 ? userRoles.join(", ") : "None"}
-                </span>
-              </p>
+                </p>
+              </div>
             </div>
           }
         />

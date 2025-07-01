@@ -1,39 +1,34 @@
 const express = require('express');
 const router = express.Router();
-const checkJwt = require('../middleware/auth');
+const { checkJwt } = require('../middleware/auth');
 const axios = require('axios');
 
-// GET /api/user/profile
-// Return user profile info from JWT plus optionally Asgardeo SCIM /Me info
-router.get('/profile', checkJwt, async (req, res) => {
-  if (!req.user) {
-    return res.status(401).json({ error: 'Unauthorized: no user info found' });
-  }
+// ----------- Profile Routes -----------
 
+// GET /api/user/profile → Fetch profile from JWT + optionally SCIM
+router.get('/profile', checkJwt, async (req, res) => {
   const token = req.headers.authorization;
+
   try {
-    // Optionally fetch extended profile from Asgardeo SCIM API
     const response = await axios.get(`${process.env.ASGARDEO_BASE_URL}/scim2/Me`, {
-      headers: { Authorization: token }
+      headers: { Authorization: token },
     });
 
     return res.json({
       message: 'Profile fetched successfully',
-      jwtUser: req.user,
+      jwtUser: req.auth,
       scimProfile: response.data,
     });
   } catch (err) {
-    // If SCIM call fails, fallback to just JWT info
-    console.error('Error fetching SCIM profile:', err.response?.data || err.message);
+    console.error('⚠️ SCIM fetch failed:', err.response?.data || err.message);
     return res.json({
       message: 'Profile fetched from JWT only',
-      jwtUser: req.user,
+      jwtUser: req.auth,
     });
   }
 });
 
-// PUT /api/user/profile
-// Update profile via SCIM API
+// PUT /api/user/profile → Update profile via SCIM
 router.put('/profile', checkJwt, async (req, res) => {
   const token = req.headers.authorization;
   const { givenName, familyName, phoneNumbers, profileUrl } = req.body;
@@ -53,12 +48,13 @@ router.put('/profile', checkJwt, async (req, res) => {
         headers: { Authorization: token },
       }
     );
+
     return res.json({
       message: 'Profile updated successfully',
       updatedProfile: response.data,
     });
   } catch (err) {
-    console.error('Error updating profile:', err.response?.data || err.message);
+    console.error('⚠️ Error updating SCIM profile:', err.response?.data || err.message);
     return res.status(500).json({ error: 'Failed to update profile' });
   }
 });

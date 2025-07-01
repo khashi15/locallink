@@ -1,4 +1,5 @@
 import React, { useEffect, useState } from "react";
+import Button from "../components/Button";
 
 function Dashboard({ accessToken, userId }) {
   const [services, setServices] = useState([]);
@@ -20,6 +21,11 @@ function Dashboard({ accessToken, userId }) {
   }, [accessToken]);
 
   const createService = () => {
+    if (!newService.title || !newService.description) {
+      alert("Please fill in both title and description");
+      return;
+    }
+
     fetch("http://localhost:4000/api/services", {
       method: "POST",
       headers: {
@@ -28,58 +34,71 @@ function Dashboard({ accessToken, userId }) {
       },
       body: JSON.stringify(newService),
     })
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Failed to create service");
+        return res.json();
+      })
       .then(() => {
         fetchServices();
         setNewService({ title: "", description: "" });
-      });
+      })
+      .catch((err) => alert(err.message));
   };
 
   return (
-    <div className="max-w-3xl mx-auto">
-      <h2 className="text-3xl font-bold mb-6">Service Provider Dashboard</h2>
+    <div className="max-w-4xl mx-auto px-6 py-10">
+      <h2 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500">
+        Service Provider Dashboard
+      </h2>
 
-      <div className="bg-white text-black rounded-lg shadow-md p-6 mb-8">
-        <h3 className="text-xl font-semibold mb-4">Create New Service</h3>
-        <div className="space-y-4">
+      <section className="bg-white rounded-xl shadow-lg p-8 mb-10">
+        <h3 className="text-2xl font-semibold mb-6 border-b border-gray-200 pb-3">
+          Create New Service
+        </h3>
+        <div className="space-y-5">
           <input
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition"
             placeholder="Title"
             value={newService.title}
             onChange={(e) =>
               setNewService({ ...newService, title: e.target.value })
             }
           />
-          <input
-            className="w-full p-2 border rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+          <textarea
+            rows={4}
+            className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-300 transition resize-none"
             placeholder="Description"
             value={newService.description}
             onChange={(e) =>
               setNewService({ ...newService, description: e.target.value })
             }
           />
-          <button
-            onClick={createService}
-            className="px-6 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition"
-          >
-            Create
-          </button>
+          <Button onClick={createService} className="w-full text-lg">
+            Create Service
+          </Button>
         </div>
-      </div>
+      </section>
 
-      <h3 className="text-2xl font-semibold mb-4">My Services</h3>
+      <h3 className="text-3xl font-semibold mb-6 text-white border-b border-gray-600 pb-2">
+        My Services
+      </h3>
+
       {services.length === 0 ? (
-        <p className="text-gray-300">No services created yet.</p>
+        <p className="text-gray-300 italic">No services created yet.</p>
       ) : (
-        services.map((service) => (
-          <div
-            key={service.id}
-            className="bg-white text-black rounded-lg shadow-md p-4 mb-4"
-          >
-            <h4 className="text-lg font-bold">{service.title}</h4>
-            <p>{service.description}</p>
-          </div>
-        ))
+        <div className="space-y-5">
+          {services.map((service) => (
+            <div
+              key={service.id}
+              className="bg-white rounded-xl shadow-md p-6 hover:shadow-lg transition"
+            >
+              <h4 className="text-xl font-bold text-gray-900 mb-2">
+                {service.title}
+              </h4>
+              <p className="text-gray-700">{service.description}</p>
+            </div>
+          ))}
+        </div>
       )}
     </div>
   );
