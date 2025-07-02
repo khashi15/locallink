@@ -1,29 +1,27 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const axios = require("axios");
-const { checkJwt } = require("../middleware/auth");
-require("dotenv").config();
+const axios = require('axios');
+const { checkJwt } = require('../middleware/auth');
+require('dotenv').config();
 
-// 🔧 Environment Variables
-const ASGARDEO_ORG_NAME = process.env.ASGARDEO_ORG;
-const CLIENT_ID = process.env.ASGARDEO_ADMIN_CLIENT_ID;
-const CLIENT_SECRET = process.env.ASGARDEO_ADMIN_CLIENT_SECRET;
+const ASGARDEO_ORG = process.env.ASGARDEO_ORG;
+const CLIENT_ID = process.env.CLIENT_ID || process.env.ASGARDEO_ADMIN_CLIENT_ID;
+const CLIENT_SECRET = process.env.CLIENT_SECRET || process.env.ASGARDEO_ADMIN_CLIENT_SECRET;
 
-// 🔍 Debug Logs
-console.log("🛠️ Org:", ASGARDEO_ORG_NAME);
-console.log("🛠️ Admin Client ID:", CLIENT_ID);
-console.log("🛠️ Admin Client Secret:", CLIENT_SECRET ? "✔️ Loaded" : "❌ Missing");
+if (!ASGARDEO_ORG || !CLIENT_ID || !CLIENT_SECRET) {
+  console.error('❌ Missing required environment variables: ASGARDEO_ORG, CLIENT_ID, CLIENT_SECRET');
+  process.exit(1);
+}
 
-// 🔐 Get Asgardeo client credentials token
-async function getClientCredentialsToken() {
-  console.log("🔑 Requesting token from Asgardeo...");
+const SCIM_BASE_URL = `https://api.asgardeo.io/t/${ASGARDEO_ORG}/scim2/Users`;
 
+async function getAccessToken() {
   try {
     const tokenResponse = await axios.post(
-      `https://api.asgardeo.io/t/${ASGARDEO_ORG_NAME}/oauth2/token`,
+      `https://api.asgardeo.io/t/${ASGARDEO_ORG}/oauth2/token`,
       new URLSearchParams({
-        grant_type: "client_credentials",
-        scope: "urn:ietf:params:scim:api:messages:2.0:Users.write",
+        grant_type: 'client_credentials',
+        scope: 'internal_user_mgt_view internal_user_mgt_update internal_user_mgt_list',
       }),
       {
         auth: {
@@ -31,95 +29,97 @@ async function getClientCredentialsToken() {
           password: CLIENT_SECRET,
         },
         headers: {
-          "Content-Type": "application/x-www-form-urlencoded",
+          'Content-Type': 'application/x-www-form-urlencoded',
         },
       }
     );
 
-    console.log("🔑 Token response:", tokenResponse.data);
     return tokenResponse.data.access_token;
-  } catch (err) {
-    console.error("❌ Failed to get token:", err.response?.data || err.message);
-    throw err;
+  } catch (error) {
+    console.error('❌ Failed to get SCIM API token:', error.response?.data || error.message);
+    throw error;
   }
 }
 
-// 🔥 Profile Update Endpoint (secured)
-router.post("/profile/update", checkJwt, async (req, res) => {
-  const { firstName, lastName, mobileNumber } = req.body;
-  const userId = req.auth?.sub;
-
-  console.log("📦 Incoming profile update request for user:", userId);
-  console.log("📦 Payload:", { firstName, lastName, mobileNumber });
-
-  if (!userId) {
-    console.error("❌ Unauthorized: No user ID in token");
-    return res.status(401).json({ message: "Unauthorized: No user ID" });
-  }
-
-  if (!firstName && !lastName && !mobileNumber) {
-    return res.status(400).json({ message: "No fields to update" });
-  }
-
+router.get('/profile', checkJwt, async (req, res) => {
   try {
-    const token = await getClientCredentialsToken();
+    console.log('req.auth:', req.auth); // DEBUG - check token payload structure
+
+    const userEmail = req.auth.email;
+    if (!userEmail) return res.status(400).json({ message: 'No email found in token' });
+
+    const token = await getAccessToken();
+
+    const url = `${SCIM_BASE_URL}?filter=userName eq "DEFAULT/${userEmail}"`;
+    const response = await axios.get(url, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+
+    const user = response.data.Resources?.[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    res.json({
+      id: user.id,
+      username: user.userName,
+      firstName: user.name?.givenName || '',
+      lastName: user.name?.familyName || '',
+      contactNumber: user.phoneNumbers?.[0]?.value || '',
+    });
+  } catch (error) {
+    console.error('❌ Error fetching profile:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to fetch profile' });
+  }
+});
+
+router.post('/profile/update', checkJwt, async (req, res) => {
+  try {
+    console.log('req.auth:', req.auth); // DEBUG - check token payload structure
+
+    const userEmail = req.auth.email;
+    if (!userEmail) return res.status(400).json({ message: 'No email found in token' });
+
+    const { firstName, lastName, contactNumber } = req.body;
+    if (!firstName && !lastName && !contactNumber)
+      return res.status(400).json({ message: 'No profile fields to update' });
+
+    const token = await getAccessToken();
+
+    // Get SCIM user ID by email
+    const userRes = await axios.get(`${SCIM_BASE_URL}?filter=userName eq "DEFAULT/${userEmail}"`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+
+    const user = userRes.data.Resources?.[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const userId = user.id;
+
+    const value = {};
+    if (firstName || lastName) {
+      value.name = {};
+      if (firstName) value.name.givenName = firstName;
+      if (lastName) value.name.familyName = lastName;
+    }
+    if (contactNumber) {
+      value.phoneNumbers = [{ type: 'mobile', value: contactNumber }];
+    }
 
     const patchPayload = {
-      Operations: [
-        {
-          op: "Replace",
-          value: {
-            ...(firstName || lastName
-              ? {
-                  name: {
-                    ...(firstName && { givenName: firstName }),
-                    ...(lastName && { familyName: lastName }),
-                  },
-                }
-              : {}),
-            ...(mobileNumber
-              ? {
-                  phoneNumbers: [
-                    {
-                      type: "mobile",
-                      value: mobileNumber,
-                    },
-                  ],
-                }
-              : {}),
-          },
-        },
-      ],
-      schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
+      schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+      Operations: [{ op: 'replace', value }],
     };
 
-    console.log("🚀 Sending PATCH request to Asgardeo SCIM API...");
-    console.log(
-      "➡️ PATCH URL:",
-      `https://api.asgardeo.io/t/${ASGARDEO_ORG_NAME}/scim2/Users/${userId}`
-    );
-    console.log("➡️ PATCH Payload:", JSON.stringify(patchPayload, null, 2));
+    console.log(`➡️ PATCH URL: ${SCIM_BASE_URL}/${userId}`);
+    console.log('➡️ PATCH Payload:', JSON.stringify(patchPayload, null, 2));
 
-    const response = await axios.patch(
-      `https://api.asgardeo.io/t/${ASGARDEO_ORG_NAME}/scim2/Users/${userId}`,
-      patchPayload,
-      {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          "Content-Type": "application/json",
-        },
-      }
-    );
+    await axios.patch(`${SCIM_BASE_URL}/${userId}`, patchPayload, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
 
-    console.log("✅ Profile updated successfully in Asgardeo:", response.data);
-
-    res.json({ message: "✅ Profile updated successfully" });
-  } catch (err) {
-    console.error(
-      "❌ Error updating profile:",
-      err.response?.data || err.message
-    );
-    res.status(500).json({ message: "❌ Failed to update profile" });
+    res.json({ message: 'Profile updated successfully' });
+  } catch (error) {
+    console.error('❌ Error updating profile:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to update profile' });
   }
 });
 

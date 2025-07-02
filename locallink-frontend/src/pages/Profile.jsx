@@ -21,12 +21,12 @@ function Profile({ userInfo, roles }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`, // 🔥 Access token from Asgardeo
+          Authorization: `Bearer ${accessToken}`, // Access token for backend validation
         },
         body: JSON.stringify({
           firstName,
           lastName,
-          mobileNumber,
+          contactNumber: mobileNumber, // backend expects contactNumber key
         }),
       });
 
@@ -59,7 +59,6 @@ function Profile({ userInfo, roles }) {
           {userInfo.username || "N/A"}
         </p>
 
-        {/* Editable First Name */}
         <label className="block">
           <span className="font-semibold text-gray-900">First Name:</span>
           <input
@@ -71,7 +70,6 @@ function Profile({ userInfo, roles }) {
           />
         </label>
 
-        {/* Editable Last Name */}
         <label className="block">
           <span className="font-semibold text-gray-900">Last Name:</span>
           <input
@@ -96,7 +94,6 @@ function Profile({ userInfo, roles }) {
           {userInfo.email || "N/A"}
         </p>
 
-        {/* Editable Mobile Number */}
         <label className="block">
           <span className="font-semibold text-gray-900">Mobile Number:</span>
           <input
@@ -113,7 +110,6 @@ function Profile({ userInfo, roles }) {
           {userInfo.birthDate || "N/A"}
         </p>
 
-        {/* Save Button */}
         <button
           onClick={handleSave}
           disabled={saving}

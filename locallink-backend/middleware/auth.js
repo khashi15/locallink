@@ -10,7 +10,7 @@ if (!ASGARDEO_ORG || !AUDIENCE) {
 
 const ISSUER = `https://api.asgardeo.io/t/${ASGARDEO_ORG}/oauth2/token`;
 
-// ✅ JWT Authentication Middleware
+// JWT Auth Middleware
 const checkJwt = jwt({
   secret: jwksRsa.expressJwtSecret({
     cache: true,
@@ -21,10 +21,10 @@ const checkJwt = jwt({
   audience: AUDIENCE,
   issuer: ISSUER,
   algorithms: ['RS256'],
-  requestProperty: 'auth', // decoded payload will be in req.auth
+  requestProperty: 'auth',
 });
 
-// ✅ Role Authorization Middleware
+// Role Authorization Middleware
 function authorizeRoles(...allowedRoles) {
   return (req, res, next) => {
     const userRolesRaw = req.auth?.roles || req.auth?.role || '';
@@ -46,7 +46,7 @@ function authorizeRoles(...allowedRoles) {
   };
 }
 
-// ✅ Attach user info middleware (sub, email, etc.)
+// Attach user info middleware (optional)
 function attachUser(req, res, next) {
   if (req.auth) {
     req.user = {
