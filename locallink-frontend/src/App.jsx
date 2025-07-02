@@ -10,7 +10,7 @@ import Button from "./components/Button";
 
 import Profile from "./pages/Profile.jsx";
 import Services from "./pages/Services.jsx";
-import Dashboard from "./pages/Dashboard.jsx";
+import MyServices from "./pages/MyServices.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ProfileSetup from "./pages/ProfileSetup.jsx";
 
@@ -56,9 +56,7 @@ function App() {
           const idToken = await getIDToken();
           const fetchedAccessToken = await getAccessToken();
 
-          // Log raw access token here (console only, no UI)
           console.log("🛠️ Raw Access Token:", fetchedAccessToken);
-
           setAccessToken(fetchedAccessToken);
 
           try {
@@ -80,7 +78,6 @@ function App() {
           }
           setUserRoles(rolesFromToken);
 
-          // Pass roles explicitly to checkProfile to avoid stale closure issue
           await checkProfile(fetchedAccessToken, rolesFromToken);
         } catch (error) {
           console.error("❌ Error fetching user info or token", error);
@@ -108,12 +105,11 @@ function App() {
     );
 
     if (isRoleAssigned) {
-      setProfileComplete(true); // ✅ Skip profile setup
+      setProfileComplete(true);
       return;
     }
-    // ✅ If no role, go to profile setup
-    setProfileComplete(false);
 
+    setProfileComplete(false);
     try {
       const res = await axios.get("http://localhost:3001/api/profile", {
         headers: {
@@ -123,7 +119,10 @@ function App() {
       console.log("✅ Profile found:", res.data);
       setProfileComplete(true);
     } catch (err) {
-      console.warn("⚠️ Profile not found, redirecting to setup", err.response?.data || err.message);
+      console.warn(
+        "⚠️ Profile not found, redirecting to setup",
+        err.response?.data || err.message
+      );
       setProfileComplete(false);
       navigate("/profile-setup");
     }
@@ -154,6 +153,7 @@ function App() {
   }
 
   const isAdmin = userRoles.includes("admin");
+  const isServiceProvider = userRoles.includes("service_provider");
 
   if (!profileComplete && !isAdmin) {
     return (
@@ -199,10 +199,10 @@ function App() {
           element={<Services accessToken={accessToken} />}
         />
         <Route
-          path="/dashboard"
+          path="/my-services"
           element={
-            userRoles.includes("service_provider") ? (
-              <Dashboard accessToken={accessToken} userId={userInfo?.userId} />
+            isServiceProvider ? (
+              <MyServices accessToken={accessToken} />
             ) : (
               <div className="p-6">
                 <p className="text-red-600 font-semibold text-lg">
@@ -215,11 +215,8 @@ function App() {
         <Route
           path="/admin"
           element={
-            userRoles.includes("admin") ? (
-              <AdminDashboard
-                accessToken={accessToken}
-                userRoles={userRoles}
-              />
+            isAdmin ? (
+              <AdminDashboard accessToken={accessToken} userRoles={userRoles} />
             ) : (
               <div className="p-6">
                 <p className="text-red-600 font-semibold text-lg">
@@ -234,13 +231,11 @@ function App() {
           element={
             <div className="max-w-3xl mx-auto px-6 py-10">
               <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Welcome back,{" "}
-                {userInfo?.firstName || userInfo?.username || "User"}!
+                Welcome back, {userInfo?.firstName || userInfo?.username || "User"}!
               </h1>
               <div className="space-y-4 text-lg text-gray-200">
                 <p>
-                  <strong className="text-white">Email:</strong>{" "}
-                  {userInfo?.email}
+                  <strong className="text-white">Email:</strong> {userInfo?.email}
                 </p>
                 <p>
                   <strong className="text-white">Roles:</strong>{" "}
