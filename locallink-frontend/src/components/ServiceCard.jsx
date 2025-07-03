@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 
-function ServiceCard({ service, isOwner = false, onUpdate }) {
+function ServiceCard({ service, isOwner = false, onUpdate, onDelete }) {
   const [editing, setEditing] = useState(false);
   const [edited, setEdited] = useState({
     title: service.title,
@@ -49,12 +49,20 @@ function ServiceCard({ service, isOwner = false, onUpdate }) {
           <p className="text-gray-700 mb-3">{service.description}</p>
 
           {isOwner && (
-            <button
-              onClick={() => setEditing(true)}
-              className="bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-1 rounded-full text-white"
-            >
-              Edit
-            </button>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setEditing(true)}
+                className="bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-1 rounded-full text-white"
+              >
+                Edit
+              </button>
+              <button
+                onClick={() => onDelete(service.id)}
+                className="bg-red-600 px-4 py-1 rounded-full text-white hover:bg-red-700 transition"
+              >
+                Delete
+              </button>
+            </div>
           )}
         </div>
       )}

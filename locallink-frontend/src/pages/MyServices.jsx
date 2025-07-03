@@ -50,6 +50,28 @@ function MyServices({ accessToken }) {
       .catch(console.error);
   };
 
+  const handleDelete = (id) => {
+    if (!window.confirm("Are you sure you want to delete this service?")) return;
+
+    fetch(`http://localhost:3001/api/services/${id}`, {
+      method: "DELETE",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    })
+      .then((res) => {
+        if (res.ok) {
+          setServices(services.filter((s) => s.id !== id));
+        } else {
+          alert("Failed to delete the service.");
+        }
+      })
+      .catch((err) => {
+        console.error("Error deleting service:", err);
+        alert("Failed to delete the service.");
+      });
+  };
+
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
       <h2 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
@@ -93,6 +115,7 @@ function MyServices({ accessToken }) {
               service={service}
               isOwner={true}
               onUpdate={handleUpdate}
+              onDelete={handleDelete}
             />
           ))}
         </div>
