@@ -2,21 +2,25 @@ const express = require('express');
 const router = express.Router();
 const { getDB } = require('../db');
 const { checkJwt, authorizeRoles, attachUser } = require('../middleware/auth');
+const { ObjectId } = require('mongodb');  // ✅ Required for _id queries
 
-// ----------------------
 // ✅ Get all services (any logged-in user)
 router.get('/', checkJwt, attachUser, async (req, res) => {
   try {
     const db = getDB();
     const services = await db.collection('services').find().toArray();
-    res.json(services);
+
+    // ✅ Map _id to id for frontend
+    res.json(services.map(service => ({
+      ...service,
+      id: service._id.toString()
+    })));
   } catch (err) {
     console.error('Error fetching services:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// ----------------------
 // ✅ Get services owned by the logged-in service provider
 router.get('/my', checkJwt, attachUser, authorizeRoles('service_provider'), async (req, res) => {
   try {
@@ -26,14 +30,17 @@ router.get('/my', checkJwt, attachUser, authorizeRoles('service_provider'), asyn
       .collection('services')
       .find({ provider_user_id: userId })
       .toArray();
-    res.json(services);
+
+    res.json(services.map(service => ({
+      ...service,
+      id: service._id.toString()
+    })));
   } catch (err) {
     console.error('Error fetching user services:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// ----------------------
 // ✅ Create a new service (service providers only)
 router.post('/', checkJwt, attachUser, authorizeRoles('service_provider'), async (req, res) => {
   try {
@@ -46,21 +53,24 @@ router.post('/', checkJwt, attachUser, authorizeRoles('service_provider'), async
     }
 
     const newService = {
-      id: Date.now().toString(),
       title,
       description,
       provider_user_id: userId,
     };
 
-    await db.collection('services').insertOne(newService);
-    res.status(201).json(newService);
+    const result = await db.collection('services').insertOne(newService);
+    const insertedService = await db.collection('services').findOne({ _id: result.insertedId });
+
+    res.status(201).json({
+      ...insertedService,
+      id: insertedService._id.toString()
+    });
   } catch (err) {
     console.error('Error creating service:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// ----------------------
 // ✅ Update own service by ID (service providers only)
 router.put('/:id', checkJwt, attachUser, authorizeRoles('service_provider'), async (req, res) => {
   try {
@@ -69,7 +79,7 @@ router.put('/:id', checkJwt, attachUser, authorizeRoles('service_provider'), asy
     const { title, description } = req.body;
     const userId = req.user.sub;
 
-    const service = await db.collection('services').findOne({ id });
+    const service = await db.collection('services').findOne({ _id: new ObjectId(id) });
 
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
@@ -80,19 +90,22 @@ router.put('/:id', checkJwt, attachUser, authorizeRoles('service_provider'), asy
     }
 
     await db.collection('services').updateOne(
-      { id },
+      { _id: new ObjectId(id) },
       { $set: { title, description } }
     );
 
-    const updatedService = await db.collection('services').findOne({ id });
-    res.json(updatedService);
+    const updatedService = await db.collection('services').findOne({ _id: new ObjectId(id) });
+
+    res.json({
+      ...updatedService,
+      id: updatedService._id.toString()
+    });
   } catch (err) {
     console.error('Error updating service:', err);
     res.status(500).json({ message: 'Internal server error' });
   }
 });
 
-// ----------------------
 // ✅ Delete own service by ID (service providers only)
 router.delete('/:id', checkJwt, attachUser, authorizeRoles('service_provider'), async (req, res) => {
   try {
@@ -100,7 +113,7 @@ router.delete('/:id', checkJwt, attachUser, authorizeRoles('service_provider'), 
     const { id } = req.params;
     const userId = req.user.sub;
 
-    const service = await db.collection('services').findOne({ id });
+    const service = await db.collection('services').findOne({ _id: new ObjectId(id) });
 
     if (!service) {
       return res.status(404).json({ message: 'Service not found' });
@@ -110,7 +123,7 @@ router.delete('/:id', checkJwt, attachUser, authorizeRoles('service_provider'), 
       return res.status(403).json({ message: 'You can only delete your own services' });
     }
 
-    await db.collection('services').deleteOne({ id });
+    await db.collection('services').deleteOne({ _id: new ObjectId(id) });
     res.json({ message: 'Service deleted successfully' });
   } catch (err) {
     console.error('Error deleting service:', err);
