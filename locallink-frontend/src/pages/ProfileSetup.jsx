@@ -17,7 +17,8 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
           Authorization: `Bearer ${accessToken}`,
         },
       })
-      .then((res) => {
+      .then(() => {
+        // If profile exists, user already has data, navigate back
         navigate("/");
       })
       .catch(() => {
@@ -44,13 +45,13 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
           },
         }
       )
-      .then((res) => {
-        alert("Profile saved successfully!");
+      .then(() => {
+        alert("Role assigned successfully!");
         if (onComplete) onComplete();
         else navigate("/");
       })
       .catch(() => {
-        alert("Error saving profile. Please try again.");
+        alert("Error assigning role. Please try again.");
       });
   };
 
@@ -66,21 +67,19 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white px-4">
       <div className="bg-gray-900 bg-opacity-80 p-10 rounded-3xl shadow-xl w-full max-w-md backdrop-blur-sm">
         <h1 className="text-4xl font-extrabold mb-8 text-center tracking-wide">
-          Complete Your Profile
+          Select Your Role
         </h1>
         <form onSubmit={handleSubmit} className="space-y-8">
           <div>
             <label className="block mb-3 text-lg font-semibold">
-              Select Your Role
+              Choose Role
             </label>
             <select
               className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-purple-600 transition text-white"
               value={role}
               onChange={(e) => setRole(e.target.value)}
             >
-              <option value="" className="text-gray-500">
-                -- Select Role --
-              </option>
+              <option value="">-- Select Role --</option>
               <option value="customer">Customer</option>
               <option value="service_provider">Service Provider</option>
             </select>
@@ -90,7 +89,7 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
           </div>
 
           <Button type="submit" className="w-full text-lg">
-            Save and Continue
+            Save Role
           </Button>
         </form>
       </div>

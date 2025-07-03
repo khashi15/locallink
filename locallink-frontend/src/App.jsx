@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Route, Routes, useNavigate } from "react-router-dom";
+import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
 import { useAuthContext } from "@asgardeo/auth-react";
 import jwtDecode from "jwt-decode";
 import axios from "axios";
@@ -13,7 +13,7 @@ import Services from "./pages/Services.jsx";
 import MyServices from "./pages/MyServices.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ProfileSetup from "./pages/ProfileSetup.jsx";
-import AllUsers from "./pages/AllUsers.jsx";  // <-- Imported new AllUsers page
+import AllUsers from "./pages/AllUsers.jsx";
 
 function App() {
   const {
@@ -56,16 +56,8 @@ function App() {
 
           const idToken = await getIDToken();
           const fetchedAccessToken = await getAccessToken();
-
           console.log("🛠️ Raw Access Token:", fetchedAccessToken);
           setAccessToken(fetchedAccessToken);
-
-          try {
-            const decodedAccessToken = jwtDecode(fetchedAccessToken);
-            console.log("📜 Decoded Access Token:", decodedAccessToken);
-          } catch (decodeErr) {
-            console.error("❌ Failed to decode access token:", decodeErr);
-          }
 
           let rolesFromToken = [];
           if (idToken) {
@@ -77,9 +69,26 @@ function App() {
               rolesFromToken = [rolesClaim];
             }
           }
+          console.log("📜 Roles from Token:", rolesFromToken);
           setUserRoles(rolesFromToken);
 
-          await checkProfile(fetchedAccessToken, rolesFromToken);
+          const isRoleAssigned = ["admin", "customer", "service_provider"].some((role) =>
+            rolesFromToken.includes(role)
+          );
+
+          if (!isRoleAssigned) {
+            console.warn("⚠️ No valid role assigned, redirecting to profile setup.");
+            setProfileComplete(false);
+            navigate("/profile-setup");
+            return;
+          }
+
+          await checkProfile(fetchedAccessToken);
+
+          // After profile check success, mark complete and navigate home
+          setProfileComplete(true);
+          navigate("/");
+
         } catch (error) {
           console.error("❌ Error fetching user info or token", error);
           setUserInfo(null);
@@ -98,13 +107,10 @@ function App() {
     }
 
     fetchUserData();
-  }, [state?.isAuthenticated, navigate]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [state?.isAuthenticated]);
 
-  const checkProfile = async (token, roles) => {
-    const isRoleAssigned = ["admin", "customer", "service_provider"].some(role =>
-      roles.includes(role)
-    );
-
+  const checkProfile = async (token) => {
     try {
       const res = await axios.get("http://localhost:3001/api/profile", {
         headers: {
@@ -124,16 +130,9 @@ function App() {
 
       setProfileComplete(true);
     } catch (err) {
-      console.warn(
-        "⚠️ Profile not found, redirecting to setup",
-        err.response?.data || err.message
-      );
-      if (!isRoleAssigned) {
-        setProfileComplete(false);
-        navigate("/profile-setup");
-      } else {
-        setProfileComplete(true);
-      }
+      console.warn("⚠️ Profile not found, redirecting to profile setup.", err.response?.data || err.message);
+      setProfileComplete(false);
+      navigate("/profile-setup");
     }
   };
 
@@ -163,20 +162,27 @@ function App() {
 
   const isAdmin = userRoles.includes("admin");
   const isServiceProvider = userRoles.includes("service_provider");
+  const hasValidRole = ["admin", "customer", "service_provider"].some(role =>
+    userRoles.includes(role)
+  );
 
-  if (!profileComplete && !isAdmin) {
+  if (!profileComplete) {
     return (
       <Routes>
         <Route
           path="/profile-setup"
           element={
-            <ProfileSetup
-              accessToken={accessToken}
-              onComplete={() => {
-                setProfileComplete(true);
-                navigate("/");
-              }}
-            />
+            hasValidRole ? (
+              <Navigate to="/" replace />
+            ) : (
+              <ProfileSetup
+                accessToken={accessToken}
+                onComplete={() => {
+                  setProfileComplete(true);
+                  navigate("/");
+                }}
+              />
+            )
           }
         />
         <Route
@@ -235,8 +241,6 @@ function App() {
             )
           }
         />
-
-        {/* New route for All Users page, admin only */}
         <Route
           path="/all-users"
           element={
@@ -251,7 +255,6 @@ function App() {
             )
           }
         />
-
         <Route
           path="/"
           element={
@@ -271,6 +274,8 @@ function App() {
             </div>
           }
         />
+        {/* Catch all unknown routes */}
+        <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>
   );
