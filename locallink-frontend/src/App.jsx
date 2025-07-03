@@ -104,12 +104,6 @@ function App() {
       roles.includes(role)
     );
 
-    if (isRoleAssigned) {
-      setProfileComplete(true);
-      return;
-    }
-
-    setProfileComplete(false);
     try {
       const res = await axios.get("http://localhost:3001/api/profile", {
         headers: {
@@ -117,14 +111,29 @@ function App() {
         },
       });
       console.log("✅ Profile found:", res.data);
+
+      // ✅ Save backend profile details to userInfo
+      setUserInfo((prev) => ({
+        ...prev,
+        firstName: res.data.firstName || prev.firstName,
+        lastName: res.data.lastName || prev.lastName,
+        contactNumber: res.data.contactNumber || prev.contactNumber, // ✅ This line adds contact number
+        username: res.data.username || prev.username,
+        userId: res.data.id || prev.userId,
+      }));
+
       setProfileComplete(true);
     } catch (err) {
       console.warn(
         "⚠️ Profile not found, redirecting to setup",
         err.response?.data || err.message
       );
-      setProfileComplete(false);
-      navigate("/profile-setup");
+      if (!isRoleAssigned) {
+        setProfileComplete(false);
+        navigate("/profile-setup");
+      } else {
+        setProfileComplete(true);
+      }
     }
   };
 

@@ -6,7 +6,7 @@ function Profile({ userInfo, roles }) {
 
   const [firstName, setFirstName] = useState(userInfo.firstName || "");
   const [lastName, setLastName] = useState(userInfo.lastName || "");
-  const [mobileNumber, setMobileNumber] = useState(userInfo.mobile || "");
+  const [mobileNumber, setMobileNumber] = useState(userInfo.contactNumber || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
