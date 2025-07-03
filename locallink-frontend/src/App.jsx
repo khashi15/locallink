@@ -13,6 +13,7 @@ import Services from "./pages/Services.jsx";
 import MyServices from "./pages/MyServices.jsx";
 import AdminDashboard from "./pages/AdminDashboard.jsx";
 import ProfileSetup from "./pages/ProfileSetup.jsx";
+import AllUsers from "./pages/AllUsers.jsx";  // <-- Imported new AllUsers page
 
 function App() {
   const {
@@ -112,12 +113,11 @@ function App() {
       });
       console.log("✅ Profile found:", res.data);
 
-      // ✅ Save backend profile details to userInfo
       setUserInfo((prev) => ({
         ...prev,
         firstName: res.data.firstName || prev.firstName,
         lastName: res.data.lastName || prev.lastName,
-        contactNumber: res.data.contactNumber || prev.contactNumber, // ✅ This line adds contact number
+        contactNumber: res.data.contactNumber || prev.contactNumber,
         username: res.data.username || prev.username,
         userId: res.data.id || prev.userId,
       }));
@@ -235,6 +235,23 @@ function App() {
             )
           }
         />
+
+        {/* New route for All Users page, admin only */}
+        <Route
+          path="/all-users"
+          element={
+            isAdmin ? (
+              <AllUsers accessToken={accessToken} />
+            ) : (
+              <div className="p-6">
+                <p className="text-red-600 font-semibold text-lg">
+                  Access Denied
+                </p>
+              </div>
+            )
+          }
+        />
+
         <Route
           path="/"
           element={

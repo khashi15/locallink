@@ -23,9 +23,14 @@ const Layout = ({ children, userRoles, signOut }) => {
               </Link>
             )}
             {isAdmin && (
-              <Link to="/admin" className="hover:text-pink-400">
-                Admin
-              </Link>
+              <>
+                <Link to="/admin" className="hover:text-pink-400">
+                  Admin
+                </Link>
+                <Link to="/all-users" className="hover:text-pink-400">
+                  All Users
+                </Link>
+              </>
             )}
             <Link to="/profile" className="hover:text-pink-400">
               Profile
