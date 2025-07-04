@@ -138,7 +138,7 @@ function App() {
 
   if (loading) {
     return (
-      <div className="h-screen flex justify-center items-center bg-gray-950">
+      <div className="h-screen flex justify-center items-center bg-gradient-to-br from-gray-900 via-gray-800 to-black text-white">
         <Spinner />
       </div>
     );
@@ -154,7 +154,7 @@ function App() {
           Welcome! Please log in to continue.
         </p>
         <Button onClick={() => signIn()} className="w-52 text-lg">
-          Login
+          Login / Sign Up
         </Button>
       </div>
     );
@@ -172,10 +172,10 @@ function App() {
             <ProfileSetup
               accessToken={accessToken}
               onComplete={async () => {
-              setProfileComplete(true);
-              await signOut();
-              signIn();
-            }}
+                setProfileComplete(true);
+                await signOut();
+                signIn();
+              }}
             />
           }
         />
@@ -204,9 +204,9 @@ function App() {
             isServiceProvider ? (
               <MyServices accessToken={accessToken} />
             ) : (
-              <div className="p-6">
-                <p className="text-red-600 font-semibold text-lg">
-                  Access Denied
+              <div className="p-6 text-center">
+                <p className="text-red-500 font-semibold text-lg">
+                  🚫 Access Denied: Service Provider Role Required.
                 </p>
               </div>
             )
@@ -218,9 +218,9 @@ function App() {
             isAdmin ? (
               <AdminDashboard accessToken={accessToken} userRoles={userRoles} />
             ) : (
-              <div className="p-6">
-                <p className="text-red-600 font-semibold text-lg">
-                  Access Denied
+              <div className="p-6 text-center">
+                <p className="text-red-500 font-semibold text-lg">
+                  🚫 Access Denied: Admin Role Required.
                 </p>
               </div>
             )
@@ -232,9 +232,9 @@ function App() {
             isAdmin ? (
               <AllUsers accessToken={accessToken} />
             ) : (
-              <div className="p-6">
-                <p className="text-red-600 font-semibold text-lg">
-                  Access Denied
+              <div className="p-6 text-center">
+                <p className="text-red-500 font-semibold text-lg">
+                  🚫 Access Denied: Admin Role Required.
                 </p>
               </div>
             )
@@ -243,18 +243,32 @@ function App() {
         <Route
           path="/"
           element={
-            <div className="max-w-3xl mx-auto px-6 py-10">
-              <h1 className="text-4xl font-extrabold mb-4 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent">
-                Welcome back, {userInfo?.firstName || userInfo?.username || "User"}!
+            <div className="max-w-3xl mx-auto px-6 py-12">
+              <h1 className="text-5xl font-extrabold mb-6 bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 bg-clip-text text-transparent text-center">
+                Welcome, {userInfo?.firstName || userInfo?.username || "User"}!
               </h1>
-              <div className="space-y-4 text-lg text-gray-200">
+              <div className="space-y-4 text-lg text-gray-300 text-center">
                 <p>
-                  <strong className="text-white">Email:</strong> {userInfo?.email}
+                  <strong className="text-white">📧 Email:</strong> {userInfo?.email}
                 </p>
                 <p>
-                  <strong className="text-white">Roles:</strong>{" "}
+                  <strong className="text-white">👥 Roles:</strong>{" "}
                   {userRoles.length > 0 ? userRoles.join(", ") : "None"}
                 </p>
+              </div>
+              <div className="mt-8 flex justify-center gap-4">
+                <Button
+                  onClick={() => navigate("/services")}
+                  className="bg-gradient-to-r from-pink-500 to-yellow-400 hover:from-yellow-400 hover:to-pink-500 transition shadow-lg px-6 py-3 rounded-2xl font-semibold text-white"
+                >
+                  Browse Services
+                </Button>
+                <Button
+                  onClick={() => navigate("/profile")}
+                  className="bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-purple-600 hover:to-indigo-600 transition shadow-lg px-6 py-3 rounded-2xl font-semibold text-white"
+                >
+                  My Profile
+                </Button>
               </div>
             </div>
           }

@@ -73,40 +73,46 @@ function MyServices({ accessToken }) {
   };
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <h2 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 to-pink-500">
+    <div className="max-w-5xl mx-auto px-6 py-12">
+      <h2 className="text-4xl font-extrabold mb-10 text-transparent bg-clip-text bg-gradient-to-r from-purple-500 via-pink-500 to-yellow-400 text-center">
         My Services
       </h2>
 
       {/* Create Service Form */}
-      <div className="bg-white rounded-xl shadow-md p-6 mb-10">
-        <h3 className="text-2xl font-bold mb-4 text-gray-900">
+      <div className="bg-white rounded-2xl shadow-2xl p-8 mb-12">
+        <h3 className="text-2xl font-bold mb-6 text-gray-800 text-center">
           Create New Service
         </h3>
-        <input
-          type="text"
-          placeholder="Title"
-          className="border p-2 rounded mr-2"
-          value={newService.title}
-          onChange={(e) => setNewService({ ...newService, title: e.target.value })}
-        />
-        <input
-          type="text"
-          placeholder="Description"
-          className="border p-2 rounded mr-2"
-          value={newService.description}
-          onChange={(e) => setNewService({ ...newService, description: e.target.value })}
-        />
-        <button
-          onClick={handleCreate}
-          className="bg-gradient-to-r from-pink-500 to-purple-500 px-4 py-2 rounded-full text-white"
-        >
-          Create
-        </button>
+        <div className="flex flex-col md:flex-row md:items-center gap-4">
+          <input
+            type="text"
+            placeholder="Title"
+            className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+            value={newService.title}
+            onChange={(e) =>
+              setNewService({ ...newService, title: e.target.value })
+            }
+          />
+          <input
+            type="text"
+            placeholder="Description"
+            className="border border-gray-300 rounded-lg p-3 w-full focus:outline-none focus:ring-2 focus:ring-purple-400"
+            value={newService.description}
+            onChange={(e) =>
+              setNewService({ ...newService, description: e.target.value })
+            }
+          />
+          <button
+            onClick={handleCreate}
+            className="bg-gradient-to-r from-pink-500 to-purple-600 text-white px-6 py-3 rounded-xl shadow-md hover:scale-105 transition transform"
+          >
+            Create
+          </button>
+        </div>
       </div>
 
       {services.length === 0 ? (
-        <p className="text-gray-400 italic">No services created yet.</p>
+        <p className="text-gray-500 italic text-center">No services created yet.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {services.map((service) => (

@@ -2,34 +2,35 @@
 @tailwind components;
 @tailwind utilities;
 
-/* 🌟 Custom global styles */
+@import "tailwindcss";
 
-:root {
-  --brand-gradient: linear-gradient(to right, #1e3a8a, #2563eb, #1e40af);
-  --brand-color: #2563eb;
-  --brand-hover: #1d4ed8;
-  --background: #0f172a;
-  --foreground: #f8fafc;
-}
-
+/* Global Improvements */
 html,
 body {
-  @apply m-0 p-0 min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950 text-white antialiased;
-  font-family: 'Inter', system-ui, Avenir, Helvetica, Arial, sans-serif;
+  @apply m-0 p-0 min-h-screen bg-gradient-to-br from-gray-900 via-black to-gray-950 text-white font-sans antialiased;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 a {
-  @apply text-blue-400 hover:text-blue-500 transition;
+  @apply text-indigo-400 hover:text-indigo-600 underline transition-colors duration-200;
 }
 
 h1, h2, h3, h4, h5, h6 {
-  @apply font-semibold;
+  @apply font-semibold text-white;
+  line-height: 1.25;
 }
 
 button {
-  @apply focus:outline-none;
+  @apply focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 cursor-pointer;
 }
 
+input, select, textarea {
+  @apply bg-gray-800 border border-gray-700 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500;
+}
+
+/* Scrollbar Styling */
 ::-webkit-scrollbar {
   width: 8px;
 }

@@ -5,8 +5,9 @@ import Button from "../components/Button";
 const ProfileSetup = ({ accessToken, onComplete }) => {
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setError("");
 
@@ -15,8 +16,9 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
       return;
     }
 
-    axios
-      .post(
+    setLoading(true);
+    try {
+      await axios.post(
         "http://localhost:3001/api/profile",
         { role },
         {
@@ -24,22 +26,22 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
             Authorization: `Bearer ${accessToken}`,
           },
         }
-      )
-      .then(() => {
-        alert("Role assigned successfully! Please login again.");
-        if (onComplete) {
-          onComplete();  // Navigation happens in App.jsx
-        }
-      })
-      .catch(() => {
-        alert("Error assigning role. Please try again.");
-      });
+      );
+      alert("Role assigned successfully! Please login again.");
+      if (onComplete) {
+        onComplete(); // Navigation happens in App.jsx
+      }
+    } catch {
+      alert("Error assigning role. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white px-4">
-      <div className="bg-gray-900 bg-opacity-80 p-10 rounded-3xl shadow-xl w-full max-w-md backdrop-blur-sm">
-        <h1 className="text-4xl font-extrabold mb-8 text-center tracking-wide">
+      <div className="bg-gray-900 bg-opacity-90 p-10 rounded-3xl shadow-2xl w-full max-w-md backdrop-blur-md border border-purple-700">
+        <h1 className="text-4xl font-extrabold mb-10 text-center tracking-widest drop-shadow-lg">
           Select Your Role
         </h1>
         <form onSubmit={handleSubmit} className="space-y-8">
@@ -48,21 +50,28 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
               Choose Role
             </label>
             <select
-              className="w-full p-3 rounded-xl bg-gray-800 border border-gray-700 focus:outline-none focus:ring-4 focus:ring-purple-600 transition text-white"
+              className="w-full p-4 rounded-xl bg-gray-800 border border-purple-700 text-white text-lg focus:outline-none focus:ring-4 focus:ring-purple-500 transition shadow-lg"
               value={role}
               onChange={(e) => setRole(e.target.value)}
+              disabled={loading}
             >
               <option value="">-- Select Role --</option>
               <option value="customer">Customer</option>
               <option value="service_provider">Service Provider</option>
             </select>
             {error && (
-              <p className="mt-2 text-red-400 font-semibold">{error}</p>
+              <p className="mt-2 text-red-400 font-semibold text-center">
+                {error}
+              </p>
             )}
           </div>
 
-          <Button type="submit" className="w-full text-lg">
-            Save Role
+          <Button
+            type="submit"
+            disabled={loading}
+            className="w-full text-lg bg-gradient-to-r from-purple-600 to-pink-600 hover:from-pink-600 hover:to-purple-600 transition shadow-lg"
+          >
+            {loading ? "Saving..." : "Save Role"}
           </Button>
         </form>
       </div>

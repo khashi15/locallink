@@ -17,12 +17,12 @@ function Services({ accessToken }) {
 
   return (
     <div className="max-w-5xl mx-auto px-6 py-10">
-      <h2 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-pink-500 to-yellow-400">
+      <h2 className="text-4xl font-extrabold mb-8 text-center text-transparent bg-clip-text bg-gradient-to-r from-pink-500 via-yellow-400 to-green-400">
         All Services
       </h2>
 
       {services.length === 0 ? (
-        <p className="text-gray-400 italic">No services available.</p>
+        <p className="text-gray-400 italic text-center">No services available.</p>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
           {services.map((service) => (

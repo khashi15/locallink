@@ -7,7 +7,6 @@ function AdminDashboard({ accessToken, userRoles }) {
   useEffect(() => {
     if (!userRoles.includes("admin")) return;
 
-    // Fetch users from backend (mapped fields)
     fetch("http://localhost:3001/api/admin/asgardeo-users", {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -18,7 +17,6 @@ function AdminDashboard({ accessToken, userRoles }) {
         setUsers([]);
       });
 
-    // Fetch services
     fetch("http://localhost:3001/api/services", {
       headers: { Authorization: `Bearer ${accessToken}` },
     })
@@ -38,68 +36,74 @@ function AdminDashboard({ accessToken, userRoles }) {
     );
 
   return (
-    <div className="max-w-5xl mx-auto px-6 py-10">
-      <h2 className="text-4xl font-extrabold mb-8 text-transparent bg-clip-text bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500">
+    <div className="max-w-6xl mx-auto px-6 py-10">
+      <h2 className="text-5xl font-extrabold mb-10 text-transparent bg-clip-text bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 text-center">
         Admin Dashboard
       </h2>
 
-      {/* Users Section */}
-      <section className="bg-white rounded-xl shadow-lg p-8 mb-12">
-        <h3 className="text-3xl font-semibold mb-6 border-b border-gray-200 pb-2">
-          All Registered Users (from Asgardeo)
+      <section className="bg-gray-900 rounded-2xl shadow-2xl p-10 mb-16 text-gray-100">
+        <h3 className="text-3xl font-bold mb-8 border-b border-gray-700 pb-4">
+          All Registered Users
         </h3>
 
         {users.length === 0 ? (
-          <p className="text-gray-500 italic">No users found.</p>
+          <p className="text-gray-500 italic text-center">No users found.</p>
         ) : (
-          <table className="min-w-full table-auto border-collapse border border-gray-200">
-            <thead>
-              <tr className="bg-indigo-100">
-                <th className="border border-gray-300 px-4 py-2 text-left">User ID</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Username</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Email</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">First Name</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Last Name</th>
-                <th className="border border-gray-300 px-4 py-2 text-left">Roles</th>
-              </tr>
-            </thead>
-            <tbody>
-              {users.map((user) => (
-                <tr key={user.id} className="hover:bg-indigo-50 transition">
-                  <td className="border border-gray-300 px-4 py-2">{user.id}</td>
-                  <td className="border border-gray-300 px-4 py-2">{user.username}</td>
-                  <td className="border border-gray-300 px-4 py-2">{user.email || "-"}</td>
-                  <td className="border border-gray-300 px-4 py-2">{user.firstName || "-"}</td>
-                  <td className="border border-gray-300 px-4 py-2">{user.lastName || "-"}</td>
-                  <td className="border border-gray-300 px-4 py-2">
-                    {user.roles.length > 0 ? user.roles.join(", ") : "-"}
-                  </td>
+          <div className="overflow-auto">
+            <table className="min-w-full table-auto border border-gray-700 text-sm">
+              <thead>
+                <tr className="bg-indigo-800 text-gray-200">
+                  <th className="border border-gray-700 px-4 py-2">User ID</th>
+                  <th className="border border-gray-700 px-4 py-2">Username</th>
+                  <th className="border border-gray-700 px-4 py-2">Email</th>
+                  <th className="border border-gray-700 px-4 py-2">First Name</th>
+                  <th className="border border-gray-700 px-4 py-2">Last Name</th>
+                  <th className="border border-gray-700 px-4 py-2">Roles</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {users.map((user) => (
+                  <tr
+                    key={user.id}
+                    className="hover:bg-indigo-700 transition duration-150"
+                  >
+                    <td className="border border-gray-700 px-4 py-2">{user.id}</td>
+                    <td className="border border-gray-700 px-4 py-2">{user.username}</td>
+                    <td className="border border-gray-700 px-4 py-2">{user.email || "-"}</td>
+                    <td className="border border-gray-700 px-4 py-2">{user.firstName || "-"}</td>
+                    <td className="border border-gray-700 px-4 py-2">{user.lastName || "-"}</td>
+                    <td className="border border-gray-700 px-4 py-2">
+                      {user.roles.length > 0 ? user.roles.join(", ") : "-"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         )}
       </section>
 
-      {/* Services Section */}
-      <section className="bg-white rounded-xl shadow-lg p-8">
-        <h3 className="text-3xl font-semibold mb-6 border-b border-gray-200 pb-2">
+      <section className="bg-gray-900 rounded-2xl shadow-2xl p-10 text-gray-100">
+        <h3 className="text-3xl font-bold mb-8 border-b border-gray-700 pb-4">
           All Services
         </h3>
+
         {services.length === 0 ? (
-          <p className="text-gray-500 italic">No services found.</p>
+          <p className="text-gray-500 italic text-center">No services found.</p>
         ) : (
-          services.map((service) => (
-            <div
-              key={service.id}
-              className="bg-indigo-50 p-5 rounded-lg mb-5 shadow-sm hover:shadow-md transition"
-            >
-              <h4 className="text-xl font-bold text-indigo-700 mb-1">
-                {service.title}
-              </h4>
-              <p className="text-gray-700">{service.description}</p>
-            </div>
-          ))
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {services.map((service) => (
+              <div
+                key={service.id}
+                className="bg-indigo-900 p-5 rounded-lg shadow hover:shadow-lg transition border border-indigo-700"
+              >
+                <h4 className="text-xl font-bold text-indigo-300 mb-2">
+                  {service.title}
+                </h4>
+                <p className="text-gray-300">{service.description}</p>
+              </div>
+            ))}
+          </div>
         )}
       </section>
     </div>
