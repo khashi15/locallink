@@ -1,11 +1,8 @@
 import React, { useState } from "react";
 import axios from "axios";
-import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
 
 const ProfileSetup = ({ accessToken, onComplete }) => {
-  const navigate = useNavigate();
-
   const [role, setRole] = useState("");
   const [error, setError] = useState("");
 
@@ -29,9 +26,10 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
         }
       )
       .then(() => {
-        alert("Role assigned successfully!");
-        if (onComplete) onComplete();
-        else navigate("/");
+        alert("Role assigned successfully! Please login again.");
+        if (onComplete) {
+          onComplete();  // Navigation happens in App.jsx
+        }
       })
       .catch(() => {
         alert("Error assigning role. Please try again.");

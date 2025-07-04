@@ -9,7 +9,7 @@ async function getManagementAccessToken() {
 
   const params = new URLSearchParams();
   params.append('grant_type', 'client_credentials');
-  params.append('scope', 'internal_user_mgt_view');
+  params.append('scope', 'internal_user_mgt_view internal_user_mgt_write');
 
   const auth = Buffer.from(`${clientId}:${clientSecret}`).toString('base64');
 

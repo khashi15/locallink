@@ -35,7 +35,6 @@ function App() {
   const [profileComplete, setProfileComplete] = useState(false);
 
   useEffect(() => {
-    // Avoid refetching when already at profile-setup page
     if (!state?.isAuthenticated || location.pathname === "/profile-setup") return;
 
     async function fetchUserData() {
@@ -107,7 +106,7 @@ function App() {
     }
 
     fetchUserData();
-  }, [state?.isAuthenticated, location.pathname]);  // <-- Important: add location.pathname here
+  }, [state?.isAuthenticated, location.pathname]);
 
   const checkProfile = async (token) => {
     try {
@@ -172,12 +171,11 @@ function App() {
           element={
             <ProfileSetup
               accessToken={accessToken}
-              onComplete={() => {
-                setProfileComplete(true);
-                if (location.pathname === "/profile-setup") {
-                  navigate("/");
-                }
-              }}
+              onComplete={async () => {
+              setProfileComplete(true);
+              await signOut();
+              signIn();
+            }}
             />
           }
         />

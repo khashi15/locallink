@@ -50,10 +50,7 @@ function Profile({ userInfo, roles }) {
       </h2>
 
       <div className="space-y-4 text-gray-700 text-lg">
-        <p>
-          <span className="font-semibold text-gray-900">User ID:</span>{" "}
-          {userInfo.id || "N/A"}
-        </p>
+        
         <p>
           <span className="font-semibold text-gray-900">Username:</span>{" "}
           {userInfo.username || "N/A"}

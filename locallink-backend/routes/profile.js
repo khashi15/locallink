@@ -14,6 +14,7 @@ if (!ASGARDEO_ORG || !CLIENT_ID || !CLIENT_SECRET) {
 }
 
 const SCIM_BASE_URL = `https://api.asgardeo.io/t/${ASGARDEO_ORG}/scim2/Users`;
+const ROLES_BASE_URL = `https://api.asgardeo.io/t/${ASGARDEO_ORG}/scim2/Roles`;
 
 // Get Management API Access Token
 async function getAccessToken() {
@@ -22,7 +23,7 @@ async function getAccessToken() {
       `https://api.asgardeo.io/t/${ASGARDEO_ORG}/oauth2/token`,
       new URLSearchParams({
         grant_type: 'client_credentials',
-        scope: 'internal_user_mgt_view internal_user_mgt_update internal_user_mgt_list',
+        scope: 'internal_user_mgt_view internal_user_mgt_update internal_user_mgt_list internal_role_mgt_update internal_role_mgt_view',
       }),
       {
         auth: {
@@ -88,7 +89,6 @@ router.post('/profile/update', checkJwt, async (req, res) => {
 
     const token = await getAccessToken();
 
-    // Fetch SCIM user ID by email
     const userRes = await axios.get(`${SCIM_BASE_URL}?filter=userName eq "DEFAULT/${userEmail}"`, {
       headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
     });
@@ -121,6 +121,60 @@ router.post('/profile/update', checkJwt, async (req, res) => {
   } catch (error) {
     console.error('❌ Error updating profile:', error.response?.data || error.message);
     res.status(500).json({ message: 'Failed to update profile' });
+  }
+});
+
+// ✅ POST /api/profile - Assign role to user (Role Assignment)
+router.post('/profile', checkJwt, async (req, res) => {
+  try {
+    const { role } = req.body;
+    const userEmail = req.auth.email;
+
+    if (!role) return res.status(400).json({ message: 'Role is required' });
+    if (!userEmail) return res.status(400).json({ message: 'User email missing' });
+
+    const token = await getAccessToken();
+
+    // Fetch SCIM user ID by email
+    const userRes = await axios.get(`${SCIM_BASE_URL}?filter=userName eq "DEFAULT/${userEmail}"`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+
+    const user = userRes.data.Resources?.[0];
+    if (!user) return res.status(404).json({ message: 'User not found' });
+
+    const userId = user.id;
+
+    // Fetch Role ID by display name
+    const roleRes = await axios.get(`${ROLES_BASE_URL}?filter=displayName eq "${role}"`, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+
+    const roleData = roleRes.data.Resources?.[0];
+    if (!roleData) return res.status(404).json({ message: 'Role not found' });
+
+    const roleId = roleData.id;
+
+    // Assign user to role
+    const patchPayload = {
+      schemas: ['urn:ietf:params:scim:api:messages:2.0:PatchOp'],
+      Operations: [
+        {
+          op: 'add',
+          path: 'users',
+          value: [{ value: userId }],
+        },
+      ],
+    };
+
+    await axios.patch(`${ROLES_BASE_URL}/${roleId}`, patchPayload, {
+      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    });
+
+    res.json({ message: 'Role assigned successfully' });
+  } catch (error) {
+    console.error('❌ Error assigning role:', error.response?.data || error.message);
+    res.status(500).json({ message: 'Failed to assign role' });
   }
 });
 
