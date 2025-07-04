@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import { Route, Routes, useNavigate, Navigate } from "react-router-dom";
+import { Route, Routes, useNavigate, Navigate, useLocation } from "react-router-dom";
 import { useAuthContext } from "@asgardeo/auth-react";
 import jwtDecode from "jwt-decode";
 import axios from "axios";
@@ -26,6 +26,7 @@ function App() {
   } = useAuthContext();
 
   const navigate = useNavigate();
+  const location = useLocation();
 
   const [userInfo, setUserInfo] = useState(null);
   const [userRoles, setUserRoles] = useState([]);
@@ -34,81 +35,79 @@ function App() {
   const [profileComplete, setProfileComplete] = useState(false);
 
   useEffect(() => {
+    // Avoid refetching when already at profile-setup page
+    if (!state?.isAuthenticated || location.pathname === "/profile-setup") return;
+
     async function fetchUserData() {
-      if (state?.isAuthenticated) {
-        setLoading(true);
-        try {
-          const basicInfo = await getBasicUserInfo();
-          console.log("✅ Basic user info:", basicInfo);
+      setLoading(true);
+      try {
+        const basicInfo = await getBasicUserInfo();
+        console.log("✅ Basic user info:", basicInfo);
 
-          const mappedUserInfo = {
-            userId: basicInfo.sub || "",
-            username: basicInfo.email || "",
-            firstName: basicInfo.given_name || basicInfo.givenName || "",
-            lastName: basicInfo.family_name || basicInfo.familyName || "",
-            role: basicInfo.role || "",
-            country: basicInfo.country || "",
-            email: basicInfo.email || "",
-            mobile: basicInfo.mobile || basicInfo.mobile_number || "",
-            birthDate: basicInfo.birthdate || "",
-          };
-          setUserInfo(mappedUserInfo);
+        const mappedUserInfo = {
+          userId: basicInfo.sub || "",
+          username: basicInfo.email || "",
+          firstName: basicInfo.given_name || basicInfo.givenName || "",
+          lastName: basicInfo.family_name || basicInfo.familyName || "",
+          role: basicInfo.role || "",
+          country: basicInfo.country || "",
+          email: basicInfo.email || "",
+          mobile: basicInfo.mobile || basicInfo.mobile_number || "",
+          birthDate: basicInfo.birthdate || "",
+        };
+        setUserInfo(mappedUserInfo);
 
-          const idToken = await getIDToken();
-          const fetchedAccessToken = await getAccessToken();
-          console.log("🛠️ Raw Access Token:", fetchedAccessToken);
-          setAccessToken(fetchedAccessToken);
+        const idToken = await getIDToken();
+        const fetchedAccessToken = await getAccessToken();
+        console.log("🛠️ Raw Access Token:", fetchedAccessToken);
+        setAccessToken(fetchedAccessToken);
 
-          let rolesFromToken = [];
-          if (idToken) {
-            const decoded = jwtDecode(idToken);
-            const rolesClaim = decoded.roles || decoded.role || [];
-            if (Array.isArray(rolesClaim)) {
-              rolesFromToken = rolesClaim;
-            } else if (rolesClaim) {
-              rolesFromToken = [rolesClaim];
-            }
+        let rolesFromToken = [];
+        if (idToken) {
+          const decoded = jwtDecode(idToken);
+          const rolesClaim = decoded.roles || decoded.role || [];
+          if (Array.isArray(rolesClaim)) {
+            rolesFromToken = rolesClaim;
+          } else if (rolesClaim) {
+            rolesFromToken = [rolesClaim];
           }
-          console.log("📜 Roles from Token:", rolesFromToken);
-          setUserRoles(rolesFromToken);
-
-          const isRoleAssigned = ["admin", "customer", "service_provider"].some((role) =>
-            rolesFromToken.includes(role)
-          );
-
-          if (!isRoleAssigned) {
-            console.warn("⚠️ No valid role assigned, redirecting to profile setup.");
-            setProfileComplete(false);
-            navigate("/profile-setup");
-            return;
-          }
-
-          await checkProfile(fetchedAccessToken);
-
-          // After profile check success, mark complete and navigate home
-          setProfileComplete(true);
-          navigate("/");
-
-        } catch (error) {
-          console.error("❌ Error fetching user info or token", error);
-          setUserInfo(null);
-          setUserRoles([]);
-          setAccessToken(null);
-          setProfileComplete(false);
-        } finally {
-          setLoading(false);
         }
-      } else {
+        console.log("📜 Roles from Token:", rolesFromToken);
+        setUserRoles(rolesFromToken);
+
+        const isRoleAssigned = ["admin", "customer", "service_provider"].some((role) =>
+          rolesFromToken.includes(role)
+        );
+
+        if (!isRoleAssigned) {
+          console.warn("⚠️ No valid role assigned, redirecting to profile setup.");
+          setProfileComplete(false);
+          if (location.pathname !== "/profile-setup") {
+            navigate("/profile-setup");
+          }
+          return;
+        }
+
+        await checkProfile(fetchedAccessToken);
+
+        setProfileComplete(true);
+        if (location.pathname === "/profile-setup") {
+          navigate("/");
+        }
+
+      } catch (error) {
+        console.error("❌ Error fetching user info or token", error);
         setUserInfo(null);
         setUserRoles([]);
         setAccessToken(null);
         setProfileComplete(false);
+      } finally {
+        setLoading(false);
       }
     }
 
     fetchUserData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [state?.isAuthenticated]);
+  }, [state?.isAuthenticated, location.pathname]);  // <-- Important: add location.pathname here
 
   const checkProfile = async (token) => {
     try {
@@ -132,7 +131,9 @@ function App() {
     } catch (err) {
       console.warn("⚠️ Profile not found, redirecting to profile setup.", err.response?.data || err.message);
       setProfileComplete(false);
-      navigate("/profile-setup");
+      if (location.pathname !== "/profile-setup") {
+        navigate("/profile-setup");
+      }
     }
   };
 
@@ -162,41 +163,27 @@ function App() {
 
   const isAdmin = userRoles.includes("admin");
   const isServiceProvider = userRoles.includes("service_provider");
-  const hasValidRole = ["admin", "customer", "service_provider"].some(role =>
-    userRoles.includes(role)
-  );
 
-  if (!profileComplete) {
+  if (state?.isAuthenticated && !loading && !profileComplete) {
     return (
       <Routes>
         <Route
           path="/profile-setup"
           element={
-            hasValidRole ? (
-              <Navigate to="/" replace />
-            ) : (
-              <ProfileSetup
-                accessToken={accessToken}
-                onComplete={() => {
-                  setProfileComplete(true);
+            <ProfileSetup
+              accessToken={accessToken}
+              onComplete={() => {
+                setProfileComplete(true);
+                if (location.pathname === "/profile-setup") {
                   navigate("/");
-                }}
-              />
-            )
+                }
+              }}
+            />
           }
         />
         <Route
           path="*"
-          element={
-            <div className="h-screen flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white px-4">
-              <p className="text-xl mb-4">
-                Please complete your profile to continue.
-              </p>
-              <Button onClick={() => navigate("/profile-setup")}>
-                Complete Profile
-              </Button>
-            </div>
-          }
+          element={<Navigate to="/profile-setup" replace />}
         />
       </Routes>
     );
@@ -274,7 +261,6 @@ function App() {
             </div>
           }
         />
-        {/* Catch all unknown routes */}
         <Route path="*" element={<Navigate to="/" replace />} />
       </Routes>
     </Layout>

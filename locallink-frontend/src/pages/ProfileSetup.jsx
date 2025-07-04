@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from "react";
+import React, { useState } from "react";
 import axios from "axios";
 import { useNavigate } from "react-router-dom";
 import Button from "../components/Button";
@@ -7,24 +7,7 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
   const navigate = useNavigate();
 
   const [role, setRole] = useState("");
-  const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
-
-  useEffect(() => {
-    axios
-      .get("http://localhost:3001/api/profile", {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      })
-      .then(() => {
-        // If profile exists, user already has data, navigate back
-        navigate("/");
-      })
-      .catch(() => {
-        setLoading(false);
-      });
-  }, [accessToken, navigate]);
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -54,14 +37,6 @@ const ProfileSetup = ({ accessToken, onComplete }) => {
         alert("Error assigning role. Please try again.");
       });
   };
-
-  if (loading) {
-    return (
-      <div className="h-screen flex justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white">
-        <p className="text-xl font-semibold">Loading...</p>
-      </div>
-    );
-  }
 
   return (
     <div className="min-h-screen flex flex-col justify-center items-center bg-gradient-to-br from-indigo-900 via-purple-900 to-pink-900 text-white px-4">
