@@ -6,7 +6,7 @@ function Profile({ userInfo, roles }) {
 
   const [firstName, setFirstName] = useState(userInfo.firstName || "");
   const [lastName, setLastName] = useState(userInfo.lastName || "");
-  const [mobileNumber, setMobileNumber] = useState(userInfo.contactNumber || "");
+  const [contactNumber, setContactNumber] = useState(userInfo.contactNumber || "");
   const [saving, setSaving] = useState(false);
   const [message, setMessage] = useState("");
 
@@ -21,12 +21,12 @@ function Profile({ userInfo, roles }) {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${accessToken}`, // Access token for backend validation
+          Authorization: `Bearer ${accessToken}`,
         },
         body: JSON.stringify({
           firstName,
           lastName,
-          contactNumber: mobileNumber, // backend expects contactNumber key
+          contactNumber,
         }),
       });
 
@@ -52,7 +52,7 @@ function Profile({ userInfo, roles }) {
       <div className="space-y-4 text-gray-700 text-lg">
         <p>
           <span className="font-semibold text-gray-900">User ID:</span>{" "}
-          {userInfo.userId || "N/A"}
+          {userInfo.id || "N/A"}
         </p>
         <p>
           <span className="font-semibold text-gray-900">Username:</span>{" "}
@@ -85,10 +85,12 @@ function Profile({ userInfo, roles }) {
           <span className="font-semibold text-gray-900">Role:</span>{" "}
           {roles?.length ? roles.join(", ") : "N/A"}
         </p>
+
         <p>
           <span className="font-semibold text-gray-900">Country:</span>{" "}
           {userInfo.country || "N/A"}
         </p>
+
         <p>
           <span className="font-semibold text-gray-900">Email:</span>{" "}
           {userInfo.email || "N/A"}
@@ -99,8 +101,8 @@ function Profile({ userInfo, roles }) {
           <input
             type="tel"
             className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            value={mobileNumber}
-            onChange={(e) => setMobileNumber(e.target.value)}
+            value={contactNumber}
+            onChange={(e) => setContactNumber(e.target.value)}
             disabled={saving}
           />
         </label>
