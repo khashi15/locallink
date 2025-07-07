@@ -16,7 +16,7 @@ console.log('ASGARDEO_CLIENT_ID:', process.env.ASGARDEO_CLIENT_ID);
 
 app.use(
   cors({
-    origin: 'http://localhost:5173', // Your frontend origin
+    origin: 'http://localhost:5173', //Frontend origin
     credentials: true,
   })
 );
@@ -30,7 +30,7 @@ connectDB()
 
     app.use('/api/services', serviceRouter);
     app.use('/api/admin', adminRouter);
-    app.use('/api', profileRouter); // mount profile router under /api
+    app.use('/api', profileRouter);
 
     app.get('/', (req, res) => {
       res.send('🚀 LocalLink Backend is Running');

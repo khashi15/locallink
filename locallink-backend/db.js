@@ -1,4 +1,4 @@
-// db.js
+
 const { MongoClient } = require('mongodb');
 
 const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017';
@@ -9,7 +9,7 @@ let db;
 async function connectDB() {
     try {
         await client.connect();
-        db = client.db('locallinkdb'); // Use your DB name here
+        db = client.db('locallinkdb'); //DB name
         console.log('✅ Connected to MongoDB');
     } catch (error) {
         console.error('❌ Failed to connect to MongoDB', error);

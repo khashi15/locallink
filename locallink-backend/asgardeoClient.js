@@ -1,4 +1,4 @@
-// locallink-backend/asgardeoClient.js
+
 const axios = require('axios');
 
 const orgName = process.env.ASGARDEO_ORG;
@@ -8,9 +8,7 @@ const clientSecret = process.env.ASGARDEO_CLIENT_SECRET;
 const tokenEndpoint = `https://api.asgardeo.io/t/${orgName}/oauth2/token`;
 const usersEndpoint = `https://api.asgardeo.io/t/${orgName}/scim2/Users`;
 
-/**
- * Get Management API Token using client credentials flow
- */
+// Get Management API Token using client credentials flow
 async function getManagementAPIToken() {
   const params = new URLSearchParams();
   params.append('grant_type', 'client_credentials');
@@ -30,9 +28,9 @@ async function getManagementAPIToken() {
   }
 }
 
-/**
- * Fetch all users from Asgardeo SCIM API
- */
+
+// Fetch all users from Asgardeo SCIM API
+ 
 async function getAllUsers() {
   const token = await getManagementAPIToken();
 

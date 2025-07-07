@@ -1,4 +1,4 @@
-// assignUserRole.js
+
 const axios = require("axios");
 
 /**
@@ -13,7 +13,7 @@ async function assignUserRole(orgName, userId, roleName, accessToken) {
   const apiBase = `https://api.asgardeo.io/t/${orgName}/scim2`;
 
   try {
-    // ✅ Step 1: Fetch Role ID by role name
+    // Step 1: Fetch Role ID by role name
     const roleRes = await axios.get(
       `${apiBase}/Roles?filter=displayName eq "${roleName}"`,
       {
@@ -30,7 +30,7 @@ async function assignUserRole(orgName, userId, roleName, accessToken) {
 
     const roleId = roles[0].id;
 
-    // ✅ Step 2: Prepare PATCH payload
+    // Step 2: Prepare PATCH payload
     const patchPayload = {
       schemas: ["urn:ietf:params:scim:api:messages:2.0:PatchOp"],
       Operations: [
@@ -47,7 +47,7 @@ async function assignUserRole(orgName, userId, roleName, accessToken) {
       ],
     };
 
-    // ✅ Step 3: Patch user to assign the role
+    // Step 3: Patch user to assign the role
     await axios.patch(`${apiBase}/Users/${userId}`, patchPayload, {
       headers: {
         Authorization: `Bearer ${accessToken}`,

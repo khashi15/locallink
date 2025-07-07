@@ -3,10 +3,10 @@ const router = express.Router();
 const axios = require('axios');
 const { checkJwt, authorizeRoles } = require('../middleware/auth');
 
-// ------------------ ✅ Fetch Users from Asgardeo ------------------
+// ------------------ Fetch Users from Asgardeo ------------------
 router.get('/asgardeo-users', checkJwt, authorizeRoles('admin'), async (req, res) => {
   try {
-    // 🔐 Get Management Access Token
+    // Get Management Access Token
     const tokenResponse = await axios.post(
       `https://api.asgardeo.io/t/${process.env.ASGARDEO_ORG}/oauth2/token`,
       new URLSearchParams({
@@ -24,7 +24,7 @@ router.get('/asgardeo-users', checkJwt, authorizeRoles('admin'), async (req, res
 
     const accessToken = tokenResponse.data.access_token;
 
-    // 🔗 Call SCIM API to fetch users
+    // Call SCIM API to fetch users
     const usersResponse = await axios.get(
       `https://api.asgardeo.io/t/${process.env.ASGARDEO_ORG}/scim2/Users`,
       {
@@ -56,7 +56,8 @@ router.get('/asgardeo-users', checkJwt, authorizeRoles('admin'), async (req, res
   }
 });
 
-// ------------------ ✅ Fetch Users from MongoDB ------------------
+// ------------------ Fetch Users from MongoDB ------------------
+/**
 router.get('/users', checkJwt, authorizeRoles('admin'), async (req, res) => {
   const db = req.app.locals.db;
   if (!db) return res.status(500).json({ message: 'Database not connected' });
@@ -81,5 +82,6 @@ router.get('/users', checkJwt, authorizeRoles('admin'), async (req, res) => {
     res.status(500).json({ message: 'Internal server error' });
   }
 });
+*/
 
 module.exports = router;
